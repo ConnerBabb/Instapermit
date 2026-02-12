@@ -6,6 +6,7 @@ Falls back to fakestoreapi.com/products if Amazon blocks after 2 attempts.
 """
 
 import json
+import re
 from urllib.parse import quote_plus
 
 import requests
@@ -96,11 +97,12 @@ def _parse_amazon_card(card) -> dict | None:
         except Exception:
             price = None
 
-        # Rating
+        # Rating — extract first decimal number (e.g. "4.5 out of 5 stars" → 4.5)
         try:
             rating_text = card.find_element(By.CSS_SELECTOR, "span.a-icon-alt").text
-            rating = rating_text.split(" out")[0] if rating_text else None
-        except Exception:
+            match = re.search(r"(\d+\.?\d*)", rating_text) if rating_text else None
+            rating = float(match.group(1)) if match else None
+        except (ValueError, Exception):
             rating = None
 
         if not title:
@@ -122,7 +124,9 @@ def scrape_fakestoreapi(max_products: int = 5) -> list[dict]:
         {
             "title": item["title"],
             "price": f"${item['price']:.2f}",
-            "rating": str(item.get("rating", {}).get("rate")),
+            "rating": (
+                float(rate) if (rate := item.get("rating", {}).get("rate")) is not None else None
+            ),
             "url": f"https://fakestoreapi.com/products/{item['id']}",
         }
         for item in items

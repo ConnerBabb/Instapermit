@@ -61,7 +61,7 @@ class TestParseAmazonCard:
         assert result == {
             "title": "Test Product",
             "price": "$29.99",
-            "rating": "4.2",
+            "rating": 4.2,
             "url": "https://amazon.com/p",
         }
 
@@ -175,7 +175,7 @@ class TestScrapeFakeStoreAPI:
         assert len(result) == 2
         assert result[0]["title"] == "Product A"
         assert result[0]["price"] == "$29.99"
-        assert result[1]["rating"] == "3.5"
+        assert result[1]["rating"] == 3.5
 
     @patch("scraper.requests.get")
     def test_http_error(self, mock_get):

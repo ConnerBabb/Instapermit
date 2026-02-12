@@ -55,7 +55,7 @@ class TestCategorizeProducts:
     @patch("enhancer.requests.post")
     def test_success(self, mock_post, sample_products, mock_openai_response):
         products = copy.deepcopy(sample_products)
-        mock_post.return_value = mock_openai_response('["gaming", "budget"]')
+        mock_post.return_value = mock_openai_response('{"categories": ["gaming", "budget"]}')
 
         result = categorize_products(products)
         assert result[0]["ai_category"] == "gaming"
@@ -82,7 +82,7 @@ class TestSummarizeRatings:
     @patch("enhancer.requests.post")
     def test_success(self, mock_post, sample_products, mock_openai_response):
         products = copy.deepcopy(sample_products)
-        sentiments = '["Great laptop!", "Decent mouse."]'
+        sentiments = '{"sentiments": ["Great laptop!", "Decent mouse."]}'
         mock_post.return_value = mock_openai_response(sentiments)
 
         result = summarize_ratings(products)
@@ -107,7 +107,7 @@ class TestSuggestSelector:
     @patch("enhancer.OPENAI_API_KEY", "sk-test-key")
     @patch("enhancer.requests.post")
     def test_returns_selector(self, mock_post, mock_openai_response):
-        mock_post.return_value = mock_openai_response("h2.product-title a")
+        mock_post.return_value = mock_openai_response('{"selector": "h2.product-title a"}')
         html = "<div><h2 class='product-title'><a>Link</a></h2></div>"
         result = suggest_selector("h2.old a", html)
         assert result == "h2.product-title a"
@@ -130,8 +130,8 @@ class TestEnhanceProducts:
         products = copy.deepcopy(sample_products)
         # First call: categorize_products, second call: summarize_ratings
         mock_post.side_effect = [
-            mock_openai_response('["gaming", "budget"]'),
-            mock_openai_response('["Great laptop!", "Decent mouse."]'),
+            mock_openai_response('{"categories": ["gaming", "budget"]}'),
+            mock_openai_response('{"sentiments": ["Great laptop!", "Decent mouse."]}'),
         ]
 
         result = enhance_products(products)
@@ -144,7 +144,7 @@ class TestEnhanceProducts:
         """If categorization succeeds but sentiment fails, products still returned."""
         products = copy.deepcopy(sample_products)
         mock_post.side_effect = [
-            mock_openai_response('["gaming", "budget"]'),
+            mock_openai_response('{"categories": ["gaming", "budget"]}'),
             requests.HTTPError("API error"),
         ]
 

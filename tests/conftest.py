@@ -10,13 +10,13 @@ def sample_products():
         {
             "title": "Gaming Laptop 15.6 inch",
             "price": "$999.99",
-            "rating": "4.5",
+            "rating": 4.5,
             "url": "https://example.com/product/1",
         },
         {
             "title": "Budget Wireless Mouse",
             "price": "$12.99",
-            "rating": "3.8",
+            "rating": 3.8,
             "url": "https://example.com/product/2",
         },
     ]
