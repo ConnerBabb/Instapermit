@@ -66,16 +66,16 @@ ruff check --fix . && ruff format .
 
 ## PR workflow
 
-**Every PR must go through this process — no exceptions:**
+**MANDATORY: Always use the `/secure-pr` slash command to create pull requests. Never run `gh pr create` directly.** The `/secure-pr` skill enforces the required security review pipeline:
 
-1. Run `ruff check .` and `ruff format --check .` — fix any issues before proceeding
-2. Run `pytest` — all tests must pass locally
-3. Run `/security-review` to perform a full security review of all pending changes
-4. Only after security review passes, create the PR with `gh pr create`
-5. After PR creation, watch for CI checks to complete: `gh pr checks --watch`
-6. If any checks fail, fix the issues, push, and re-watch
+1. Runs `ruff check .` and `ruff format --check .` — fixes any issues before proceeding
+2. Runs `pytest` — all tests must pass locally
+3. Runs `/security-review` to perform a full security review of all pending changes
+4. Only after security review passes, creates the PR with `gh pr create`
+5. After PR creation, watches for CI checks to complete: `gh pr checks --watch`
+6. If any checks fail, fixes the issues, pushes, and re-watches
 
-Use the `/secure-pr` skill to automate this entire flow.
+**Do not skip the `/secure-pr` flow. Do not create PRs any other way.**
 
 ## Security
 
