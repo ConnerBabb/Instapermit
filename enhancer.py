@@ -12,14 +12,17 @@ import json
 import os
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.2")
+OPENAI_URL = "https://api.openai.com/v1/responses"
 
 
 def _chat(system: str, user: str, max_tokens: int = 300) -> str:
-    """Send a single chat completion request to the OpenAI API."""
+    """Send a request to the OpenAI Responses API."""
     if not OPENAI_API_KEY:
         raise EnvironmentError(
             "OPENAI_API_KEY is not set. Export it or pass it in your environment."
@@ -33,26 +36,24 @@ def _chat(system: str, user: str, max_tokens: int = 300) -> str:
         },
         json={
             "model": OPENAI_MODEL,
-            "messages": [
-                {"role": "system", "content": system},
+            "input": [
+                {"role": "developer", "content": system},
                 {"role": "user", "content": user},
             ],
-            "max_tokens": max_tokens,
+            "max_output_tokens": max_tokens,
             "temperature": 0.3,
-            "response_format": {"type": "json_object"},
+            "text": {"format": {"type": "json_object"}},
         },
         timeout=30,
     )
     resp.raise_for_status()
     data = resp.json()
 
-    # Validate expected response shape
-    choices = data.get("choices")
-    if not choices:
-        raise ValueError(f"OpenAI returned no choices: {data}")
-    content = choices[0].get("message", {}).get("content")
-    if content is None:
-        raise ValueError(f"OpenAI choice missing message content: {choices[0]}")
+    # Extract text from Responses API: output[0].content[0].text
+    try:
+        content = data["output"][0]["content"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        raise ValueError(f"Unexpected Responses API shape: {data}")
 
     return content.strip()
 
