@@ -6,14 +6,17 @@ Falls back to fakestoreapi.com/products if Amazon blocks after 2 attempts.
 """
 
 import json
+from urllib.parse import quote_plus
+
 import requests
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 def create_driver() -> webdriver.Chrome:
@@ -27,7 +30,9 @@ def create_driver() -> webdriver.Chrome:
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     )
-    return webdriver.Chrome(options=opts)
+    # Auto-download matching ChromeDriver via webdriver-manager
+    service = Service(ChromeDriverManager().install())
+    return webdriver.Chrome(service=service, options=opts)
 
 
 def scrape_amazon(query: str, max_products: int = 5) -> list[dict] | None:
@@ -36,7 +41,7 @@ def scrape_amazon(query: str, max_products: int = 5) -> list[dict] | None:
     Returns a list of product dicts, or None on failure.
     Retries up to 2 times as required by the spec.
     """
-    url = f"https://www.amazon.com/s?k={query}"
+    url = f"https://www.amazon.com/s?k={quote_plus(query)}"
 
     for attempt in range(1, 3):  # 2 attempts
         driver = None
@@ -80,16 +85,14 @@ def _parse_amazon_card(card) -> dict | None:
     """Extract title, price, rating, and URL from a single Amazon result card."""
     try:
         # Title + URL
-        link_el = card.find_element(
-            By.CSS_SELECTOR,
-            "h2 a.a-link-normal"
-        )
+        link_el = card.find_element(By.CSS_SELECTOR, "h2 a.a-link-normal")
         title = link_el.text.strip()
         url = link_el.get_attribute("href") or ""
 
         # Price (may not exist for every listing)
         try:
-            price = card.find_element(By.CSS_SELECTOR, "span.a-price > span.a-offscreen").text.strip()
+            price_el = card.find_element(By.CSS_SELECTOR, "span.a-price > span.a-offscreen")
+            price = price_el.text.strip()
         except Exception:
             price = None
 

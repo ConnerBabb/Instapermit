@@ -1,5 +1,7 @@
 # Product Scraper + AI Enhancer
 
+![CI](https://github.com/ConnerBabb/Instapermit/actions/workflows/ci.yml/badge.svg)
+
 Selenium-based Amazon product scraper with AI-powered data enrichment.
 
 ## Setup
@@ -55,3 +57,19 @@ A third utility, `suggest_selector()`, demonstrates dynamic selector recovery:
 given a broken CSS/XPath selector and an HTML snippet, the LLM returns a corrected selector.
 
 If no API key is set the script still runs — enhancements are skipped gracefully.
+
+## Development
+
+```bash
+# Install dev dependencies
+pip install -r requirements-dev.txt
+
+# Run tests
+pytest
+
+# Run linter
+ruff check .
+
+# Check formatting
+ruff format --check .
+```

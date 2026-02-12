@@ -11,8 +11,8 @@ Usage:
 import argparse
 import json
 
-from scraper import scrape_products
 from enhancer import enhance_products
+from scraper import scrape_products
 
 
 def main() -> None:
@@ -20,12 +20,14 @@ def main() -> None:
         description="Scrape products from Amazon (or fallback) and enhance with AI."
     )
     parser.add_argument(
-        "--query", type=str, default="laptops",
-        help="Search keyword (default: laptops)"
+        "--query", type=str, default="laptops", help="Search keyword (default: laptops)"
     )
     parser.add_argument(
-        "--max", type=int, default=5, dest="max_products",
-        help="Maximum number of products to scrape (default: 5)"
+        "--max",
+        type=int,
+        default=5,
+        dest="max_products",
+        help="Maximum number of products to scrape (default: 5)",
     )
     args = parser.parse_args()
 
@@ -36,20 +38,20 @@ def main() -> None:
         print("No products found. Exiting.")
         return
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("RAW SCRAPED DATA")
-    print('='*60)
+    print("=" * 60)
     print(json.dumps(products, indent=2))
 
     # Part 2: AI Enhancement
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("ENHANCING WITH AI...")
-    print('='*60)
+    print("=" * 60)
     enhanced = enhance_products(products)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("ENHANCED DATA")
-    print('='*60)
+    print("=" * 60)
     print(json.dumps(enhanced, indent=2))
 
 

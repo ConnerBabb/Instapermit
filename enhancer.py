@@ -8,8 +8,9 @@ Takes scraped product data and enriches it with:
      to suggest a corrected one based on a page HTML snippet.
 """
 
-import os
 import json
+import os
+
 import requests
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -47,6 +48,7 @@ def _chat(system: str, user: str, max_tokens: int = 300) -> str:
 
 # ── Enhancement 1: Category classification ──────────────────────────────────
 
+
 def categorize_products(products: list[dict]) -> list[dict]:
     """Add an 'ai_category' field to each product using AI classification."""
     titles = [p["title"] for p in products]
@@ -75,12 +77,10 @@ def categorize_products(products: list[dict]) -> list[dict]:
 
 # ── Enhancement 2: Rating sentiment summary ─────────────────────────────────
 
+
 def summarize_ratings(products: list[dict]) -> list[dict]:
     """Add an 'ai_sentiment' one-liner based on each product's rating + title."""
-    entries = [
-        {"title": p["title"], "rating": p.get("rating")}
-        for p in products
-    ]
+    entries = [{"title": p["title"], "rating": p.get("rating")} for p in products]
 
     system = (
         "For each product, generate a concise one-sentence sentiment summary "
@@ -104,6 +104,7 @@ def summarize_ratings(products: list[dict]) -> list[dict]:
 
 # ── Enhancement 3: Dynamic selector recovery ────────────────────────────────
 
+
 def suggest_selector(broken_selector: str, html_snippet: str) -> str:
     """
     Given a broken CSS/XPath selector and a snippet of the page HTML,
@@ -114,14 +115,12 @@ def suggest_selector(broken_selector: str, html_snippet: str) -> str:
         "Given a broken CSS or XPath selector and an HTML snippet, "
         "return ONLY the corrected selector string—no explanation."
     )
-    user = (
-        f"Broken selector: {broken_selector}\n\n"
-        f"HTML snippet:\n{html_snippet[:2000]}"
-    )
+    user = f"Broken selector: {broken_selector}\n\nHTML snippet:\n{html_snippet[:2000]}"
     return _chat(system, user, max_tokens=100)
 
 
 # ── Public API ───────────────────────────────────────────────────────────────
+
 
 def enhance_products(products: list[dict]) -> list[dict]:
     """
@@ -130,10 +129,7 @@ def enhance_products(products: list[dict]) -> list[dict]:
     the original data is returned with a warning.
     """
     if not OPENAI_API_KEY:
-        print(
-            "[WARNING] OPENAI_API_KEY not set. "
-            "Skipping AI enhancements—returning raw data."
-        )
+        print("[WARNING] OPENAI_API_KEY not set. Skipping AI enhancements—returning raw data.")
         for p in products:
             p["ai_category"] = "unknown (no API key)"
             p["ai_sentiment"] = "unavailable (no API key)"
