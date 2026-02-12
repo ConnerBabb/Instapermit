@@ -125,9 +125,7 @@ def scrape_fakestoreapi(max_products: int = 5) -> list[dict]:
             "title": item["title"],
             "price": f"${item['price']:.2f}",
             "rating": (
-                float(rate)
-                if (rate := item.get("rating", {}).get("rate")) is not None
-                else None
+                float(rate) if (rate := item.get("rating", {}).get("rate")) is not None else None
             ),
             "url": f"https://fakestoreapi.com/products/{item['id']}",
         }
