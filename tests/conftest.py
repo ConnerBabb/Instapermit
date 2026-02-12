@@ -24,13 +24,20 @@ def sample_products():
 
 @pytest.fixture
 def mock_openai_response():
-    """Factory fixture that creates a mock requests.Response for OpenAI API calls."""
+    """Factory fixture that creates a mock requests.Response for OpenAI Responses API calls."""
 
     def _make(content: str, status_code: int = 200):
         resp = MagicMock()
         resp.status_code = status_code
         resp.raise_for_status.return_value = None
-        resp.json.return_value = {"choices": [{"message": {"content": content}}]}
+        resp.json.return_value = {
+            "output": [
+                {
+                    "content": [{"type": "output_text", "text": content}],
+                    "role": "assistant",
+                }
+            ]
+        }
         return resp
 
     return _make

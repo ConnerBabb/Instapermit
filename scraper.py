@@ -19,6 +19,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
+CARD_SELECTOR = "[data-component-type='s-search-result']"
+
 
 def create_driver() -> webdriver.Chrome:
     """Create a headless Chrome WebDriver with stealth-friendly options."""
@@ -36,13 +38,30 @@ def create_driver() -> webdriver.Chrome:
     return webdriver.Chrome(service=service, options=opts)
 
 
+def _try_ai_selector(driver, broken_selector: str) -> str | None:
+    """Ask the AI to suggest a corrected CSS selector based on page HTML."""
+    try:
+        from enhancer import suggest_selector
+
+        html_snippet = driver.page_source
+        suggested = suggest_selector(broken_selector, html_snippet)
+        if suggested and suggested != broken_selector:
+            print(f"[AI Recovery] Suggested selector: {suggested}")
+            return suggested
+    except Exception as exc:
+        print(f"[AI Recovery] Could not get suggestion: {exc}")
+    return None
+
+
 def scrape_amazon(query: str, max_products: int = 5) -> list[dict] | None:
     """
     Attempt to scrape Amazon search results via Selenium.
     Returns a list of product dicts, or None on failure.
     Retries up to 2 times as required by the spec.
+    On the second attempt, uses AI selector recovery if the default selector fails.
     """
     url = f"https://www.amazon.com/s?k={quote_plus(query)}"
+    selector = CARD_SELECTOR
 
     for attempt in range(1, 3):  # 2 attempts
         driver = None
@@ -52,14 +71,10 @@ def scrape_amazon(query: str, max_products: int = 5) -> list[dict] | None:
 
             # Wait for product cards to appear
             WebDriverWait(driver, 12).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "[data-component-type='s-search-result']")
-                )
+                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
             )
 
-            cards = driver.find_elements(
-                By.CSS_SELECTOR, "[data-component-type='s-search-result']"
-            )[:max_products]
+            cards = driver.find_elements(By.CSS_SELECTOR, selector)[:max_products]
 
             if not cards:
                 raise TimeoutException("No product cards found")
@@ -75,6 +90,11 @@ def scrape_amazon(query: str, max_products: int = 5) -> list[dict] | None:
 
         except (TimeoutException, WebDriverException) as exc:
             print(f"[Attempt {attempt}/2] Amazon scrape failed: {exc}")
+            # After first failure, try AI-suggested selector for second attempt
+            if attempt == 1 and driver:
+                ai_selector = _try_ai_selector(driver, selector)
+                if ai_selector:
+                    selector = ai_selector
         finally:
             if driver:
                 driver.quit()

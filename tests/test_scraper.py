@@ -4,6 +4,7 @@ import requests
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
 from scraper import (
+    CARD_SELECTOR,
     _parse_amazon_card,
     create_driver,
     scrape_amazon,
@@ -132,8 +133,9 @@ class TestScrapeAmazon:
         assert result[0]["title"] == "Laptop Pro"
         mock_driver.quit.assert_called_once()
 
+    @patch("scraper._try_ai_selector", return_value=None)
     @patch("scraper.create_driver")
-    def test_timeout_retries_and_returns_none(self, mock_create_driver):
+    def test_timeout_retries_and_returns_none(self, mock_create_driver, mock_ai):
         mock_driver = MagicMock()
         mock_create_driver.return_value = mock_driver
 
@@ -144,9 +146,11 @@ class TestScrapeAmazon:
         assert result is None
         assert mock_create_driver.call_count == 2  # 2 retry attempts
         assert mock_driver.quit.call_count == 2
+        mock_ai.assert_called_once_with(mock_driver, CARD_SELECTOR)
 
+    @patch("scraper._try_ai_selector", return_value=None)
     @patch("scraper.create_driver")
-    def test_webdriver_exception_retries(self, mock_create_driver):
+    def test_webdriver_exception_retries(self, mock_create_driver, mock_ai):
         mock_driver = MagicMock()
         mock_create_driver.return_value = mock_driver
         mock_driver.get.side_effect = WebDriverException("browser crashed")
@@ -155,6 +159,61 @@ class TestScrapeAmazon:
 
         assert result is None
         assert mock_create_driver.call_count == 2
+
+    @patch("scraper.create_driver")
+    def test_ai_selector_recovery(self, mock_create_driver):
+        """After first timeout, AI suggests a new selector that works on retry."""
+        mock_driver = MagicMock()
+        mock_create_driver.return_value = mock_driver
+
+        # Build a card that will parse successfully
+        mock_card = MagicMock()
+        link_el = MagicMock()
+        link_el.text = "Recovered Product"
+        link_el.get_attribute.return_value = "https://amazon.com/recovered"
+        price_el = MagicMock()
+        price_el.text = "$49.99"
+        rating_el = MagicMock()
+        rating_el.text = "4.0 out of 5 stars"
+
+        def find_element_dispatch(by, selector):
+            if "h2" in selector:
+                return link_el
+            if "a-offscreen" in selector:
+                return price_el
+            if "a-icon-alt" in selector:
+                return rating_el
+            raise Exception("not found")
+
+        mock_card.find_element = MagicMock(side_effect=find_element_dispatch)
+
+        # First attempt: timeout. Second attempt (with AI selector): success.
+        call_count = {"n": 0}
+
+        def wait_side_effect(*args, **kwargs):
+            wait_mock = MagicMock()
+
+            def until_side_effect(condition):
+                call_count["n"] += 1
+                if call_count["n"] == 1:
+                    raise TimeoutException("timeout with original selector")
+                return True  # AI selector works
+
+            wait_mock.until = until_side_effect
+            return wait_mock
+
+        ai_selector = "div.s-result-item"
+
+        with (
+            patch("scraper.WebDriverWait", side_effect=wait_side_effect),
+            patch("scraper._try_ai_selector", return_value=ai_selector) as mock_ai,
+        ):
+            mock_driver.find_elements.return_value = [mock_card]
+            result = scrape_amazon("laptops", 5)
+
+        assert result is not None
+        assert result[0]["title"] == "Recovered Product"
+        mock_ai.assert_called_once_with(mock_driver, CARD_SELECTOR)
 
 
 # ── scrape_fakestoreapi ──────────────────────────────────────────────────────
