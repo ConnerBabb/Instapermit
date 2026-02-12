@@ -5,6 +5,7 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 
 from scraper import (
     CARD_SELECTOR,
+    CARD_SELECTOR_PURPOSE,
     _parse_amazon_card,
     create_driver,
     scrape_amazon,
@@ -146,7 +147,7 @@ class TestScrapeAmazon:
         assert result is None
         assert mock_create_driver.call_count == 2  # 2 retry attempts
         assert mock_driver.quit.call_count == 2
-        mock_ai.assert_called_once_with(mock_driver, CARD_SELECTOR)
+        mock_ai.assert_called_once_with(mock_driver, CARD_SELECTOR, CARD_SELECTOR_PURPOSE)
 
     @patch("scraper._try_ai_selector", return_value=None)
     @patch("scraper.create_driver")
@@ -213,7 +214,7 @@ class TestScrapeAmazon:
 
         assert result is not None
         assert result[0]["title"] == "Recovered Product"
-        mock_ai.assert_called_once_with(mock_driver, CARD_SELECTOR)
+        mock_ai.assert_called_once_with(mock_driver, CARD_SELECTOR, CARD_SELECTOR_PURPOSE)
 
 
 # ── scrape_fakestoreapi ──────────────────────────────────────────────────────

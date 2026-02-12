@@ -20,6 +20,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 CARD_SELECTOR = "[data-component-type='s-search-result']"
+CARD_SELECTOR_PURPOSE = (
+    "individual product result cards on an Amazon search results page, "
+    "each containing a title, price, rating, and product link"
+)
 
 
 def create_driver() -> webdriver.Chrome:
@@ -38,14 +42,14 @@ def create_driver() -> webdriver.Chrome:
     return webdriver.Chrome(service=service, options=opts)
 
 
-def _try_ai_selector(driver, broken_selector: str) -> str | None:
-    """Ask the AI to suggest a corrected CSS selector based on page HTML."""
+def _try_ai_selector(driver, failed_selector: str, purpose: str) -> str | None:
+    """Ask the AI to find a new CSS selector by analyzing the page HTML."""
     try:
         from enhancer import suggest_selector
 
-        html_snippet = driver.page_source
-        suggested = suggest_selector(broken_selector, html_snippet)
-        if suggested and suggested != broken_selector:
+        html = driver.page_source
+        suggested = suggest_selector(failed_selector, html, purpose=purpose)
+        if suggested and suggested != failed_selector:
             print(f"[AI Recovery] Suggested selector: {suggested}")
             return suggested
     except Exception as exc:
@@ -92,7 +96,7 @@ def scrape_amazon(query: str, max_products: int = 5) -> list[dict] | None:
             print(f"[Attempt {attempt}/2] Amazon scrape failed: {exc}")
             # After first failure, try AI-suggested selector for second attempt
             if attempt == 1 and driver:
-                ai_selector = _try_ai_selector(driver, selector)
+                ai_selector = _try_ai_selector(driver, selector, CARD_SELECTOR_PURPOSE)
                 if ai_selector:
                     selector = ai_selector
         finally:
