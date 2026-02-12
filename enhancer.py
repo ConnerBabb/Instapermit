@@ -117,18 +117,30 @@ def summarize_ratings(products: list[dict]) -> list[dict]:
 # ── Enhancement 3: Dynamic selector recovery ────────────────────────────────
 
 
-def suggest_selector(broken_selector: str, html_snippet: str) -> str:
+def suggest_selector(failed_selector: str, html_snippet: str, purpose: str = "") -> str:
     """
-    Given a broken CSS/XPath selector and a snippet of the page HTML,
-    ask the LLM to suggest a corrected selector.
+    Given a CSS selector that no longer matches and a snippet of page HTML,
+    ask the LLM to analyze the HTML and find the correct selector.
+
+    Args:
+        failed_selector: The CSS selector that returned no matches.
+        html_snippet: A chunk of the page HTML for context.
+        purpose: What the selector should target (e.g. "product listing cards").
     """
     system = (
         "You are an expert web scraping assistant. "
-        "Given a broken CSS or XPath selector and an HTML snippet, "
-        'return a JSON object: {"selector": "<corrected selector>"}. '
-        "No explanation, just the corrected selector."
+        "A CSS selector that previously worked no longer matches any elements. "
+        "Analyze the provided HTML and find a CSS selector that matches "
+        "the target elements described below. "
+        'Return a JSON object: {"selector": "<new CSS selector>"}. '
+        "No explanation."
     )
-    user = f"Broken selector: {broken_selector}\n\nHTML snippet:\n{html_snippet[:6000]}"
+    purpose_line = f"Target elements: {purpose}\n" if purpose else ""
+    user = (
+        f"Previously used selector (no longer works): {failed_selector}\n"
+        f"{purpose_line}"
+        f"\nPage HTML:\n{html_snippet[:6000]}"
+    )
     raw = _chat(system, user, max_tokens=100)
 
     try:
